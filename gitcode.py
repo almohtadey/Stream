@@ -15,6 +15,7 @@ def load_data_from_github(url):
         response.raise_for_status()  # Check if the request was successful
         file_data = BytesIO(response.content)
         data = pd.read_excel(file_data)
+
         # Create a simpler summary
         summary = pd.DataFrame({
             "Feature": data.columns,
@@ -28,20 +29,22 @@ def load_data_from_github(url):
         summary_text = f"Total Rows: {total_rows}\nTotal Columns: {total_columns}"
         return data, summary, summary_text
     except Exception as e:
-        return None, None, f"Error loading file: {e}"
+        return None, None, f"Error loading file: {str(e)}"
 
 # Streamlit interface
 st.title("Interactive Chat with Your Data")
-st.subheader("Made by : Almohtadey.")
+st.subheader("Created by: Almohtadey")
 
-# Replace this URL with the raw URL to your Excel file in your repository
+# GitHub URL to the Excel file
 github_excel_url = "https://raw.githubusercontent.com/almohtadey/Stream/main/Final%20Supplier%20Data%20with%20Trust.xlsx"
 
+# Load data
 data, summary, summary_text = load_data_from_github(github_excel_url)
+
 if data is not None:
     st.write("### Data Summary:")
     st.text(summary_text)
-    st.dataframe(summary)  # Display the simpler summary as a table
+    st.dataframe(summary)  # Display the summary as a table
 
     # Chat interface
     st.write("### Ask Questions About Your Data")
@@ -67,17 +70,10 @@ if data is not None:
             assistant_message = response['choices'][0]['message']['content']
             st.session_state.messages.append({"role": "assistant", "content": assistant_message})
 
-            # Only show the latest question and answer
-            st.session_state.latest_question = user_input
-            st.session_state.latest_response = assistant_message
+            # Display the latest question and answer
+            st.write(f"**You:** {user_input}")
+            st.write(f"**Assistant:** {assistant_message}")
         except Exception as e:
-            assistant_message = f"Error: {e}"
-            st.session_state.latest_question = user_input
-            st.session_state.latest_response = assistant_message
-
-    # Display only the latest question and response
-    if "latest_question" in st.session_state and "latest_response" in st.session_state:
-        st.write(f"**You:** {st.session_state.latest_question}")
-        st.write(f"**Assistant:** {st.session_state.latest_response}")
+            st.error(f"Error communicating with the model: {str(e)}")
 else:
-    st.error(summary_text)
+    st.error(summary_text or "Failed to load data. Please check the file URL or format.")
